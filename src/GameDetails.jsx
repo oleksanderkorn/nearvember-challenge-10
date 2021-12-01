@@ -199,9 +199,7 @@ const GameDetails = ({
                     key={`row-${i}`}
                     fields={f}
                     row={i}
-                    hasCounterparty={
-                      game.counterpartyId && game.counterpartyId !== ""
-                    }
+                    canMakeMove={canMakeMove}
                     onFieldSelected={onFieldSelected}
                   />
                 ))}
@@ -231,7 +229,7 @@ const GameDetails = ({
                     key={`row-${i}`}
                     fields={f}
                     row={i}
-                    canMakeMove={canMakeMove()}
+                    canMakeMove={canMakeMove}
                     onFieldSelected={onFieldSelected}
                   />
                 ))}
@@ -273,12 +271,20 @@ const Field = ({ field, row, col, onFieldSelected, ownBoard, canMakeMove }) => {
       onMouseEnter={() => setFieldHovered(true)}
       onMouseLeave={() => setFieldHovered(false)}
       className={`w-10 h-10 ${
-        canMakeMove && !ownBoard && (field === "." || field === "*")
+        canMakeMove &&
+        canMakeMove() &&
+        !ownBoard &&
+        (field === "." || field === "*")
           ? "cursor-pointer border border-transparent rounded-md hover:bg-red-200"
           : ""
       } flex items-center justify-center`}
       onClick={() => {
-        if (canMakeMove && !ownBoard && (field === "." || field === "*")) {
+        if (
+          canMakeMove &&
+          canMakeMove() &&
+          !ownBoard &&
+          (field === "." || field === "*")
+        ) {
           onFieldSelected(row, col);
         }
       }}
@@ -291,7 +297,7 @@ const Field = ({ field, row, col, onFieldSelected, ownBoard, canMakeMove }) => {
           viewBox="0 0 24 24"
           stroke="#333"
         >
-          {fieldHovered && canMakeMove ? (
+          {fieldHovered && canMakeMove && canMakeMove() ? (
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
