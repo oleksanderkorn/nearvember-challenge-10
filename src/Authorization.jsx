@@ -1,87 +1,10 @@
 import { Fragment, useState, useEffect } from "react";
 import { useTimeoutFn } from "react-use";
 import { Transition } from "@headlessui/react";
-import { Switch } from "@headlessui/react";
 
-const GodModeToggle = ({
-  contract,
-  currentUser,
-  nearConfig,
-  wallet,
-  onLoading,
-}) => {
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    if (currentUser) {
-      contract.get_god_mode({ accountId: currentUser.accountId }).then(
-        (mode) => {
-          // console.log(`God mode [${mode}]`);
-          setEnabled(mode);
-        },
-        (err) => {
-          console.log(err);
-        }
-      );
-    }
-  }, [enabled, contract, currentUser]);
-
-  const switchMode = (isEnabled) => {
-    if (isEnabled) {
-      onLoading(true);
-      contract.god_mode_on({}).then(
-        () => {
-          setEnabled(true);
-          onLoading(false);
-        },
-        (err) => {
-          onLoading(false);
-        }
-      );
-    } else {
-      onLoading(true);
-      contract.god_mode_off({}).then(
-        () => {
-          setEnabled(false);
-          onLoading(false);
-        },
-        (err) => {
-          onLoading(false);
-        }
-      );
-    }
-  };
-
-  return (
-    <div className="flex-row content-between">
-      <span>God mode: </span>
-      <Switch
-        checked={enabled}
-        onChange={switchMode}
-        className={`${
-          enabled ? "bg-blue-600" : "bg-gray-200"
-        } relative inline-flex items-center h-6 rounded-full w-11`}
-      >
-        <span className="sr-only">God mode</span>
-        <span
-          className={`${
-            enabled ? "translate-x-6" : "translate-x-1"
-          } inline-block w-4 h-4 transform bg-white rounded-full`}
-        />
-      </Switch>
-    </div>
-  );
-};
-
-const Authorization = ({
-  contract,
-  currentUser,
-  nearConfig,
-  wallet,
-  onLoading,
-}) => {
+const Authorization = ({ contract, currentUser, nearConfig, wallet }) => {
   const signIn = () => {
-    wallet.requestSignIn(nearConfig.contractName, "NEAR Voting App");
+    wallet.requestSignIn(nearConfig.contractName, "NEAR Battle Ships");
   };
 
   const signOut = () => {
@@ -120,7 +43,7 @@ const Authorization = ({
               currentUser && currentUser.accountId ? "md:pl-60" : ""
             } font-medium text-black uppercase`}
           >
-            Voting is easy 😎
+            Near BattleShips
           </div>
           <div className="flex justify-between">
             {currentUser && (
@@ -128,13 +51,6 @@ const Authorization = ({
                 <p className="text-black-500">
                   Account ID: {currentUser.accountId}
                 </p>
-                <GodModeToggle
-                  contract={contract}
-                  currentUser={currentUser}
-                  nearConfig={nearConfig}
-                  wallet={wallet}
-                  onLoading={onLoading}
-                />
               </div>
             )}
             {currentUser ? (

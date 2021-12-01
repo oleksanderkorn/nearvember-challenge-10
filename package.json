@@ -1,8 +1,8 @@
 {
-    "name": "nearvember-challenge-8",
+    "name": "nearvember-challenge-10",
     "version": "0.1.0",
     "private": true,
-    "homepage": "https://oleksanderkorn.github.io/nearvember-challenge-8/",
+    "homepage": "https://oleksanderkorn.github.io/nearvember-challenge-10/",
     "dependencies": {
         "@craco/craco": "^6.4.0",
         "@headlessui/react": "^1.4.1",
@@ -17,6 +17,7 @@
         "near-api-js": "^0.43.1",
         "postcss": "^7",
         "react": "^17.0.2",
+        "react-copy-to-clipboard": "^5.0.4",
         "react-date-picker": "^8.3.6",
         "react-datepicker": "^4.3.0",
         "react-datetime-picker": "^3.4.3",

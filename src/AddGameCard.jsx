@@ -2,14 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { Transition } from "@headlessui/react";
 import { useTimeoutFn } from "react-use";
 
-const AddElectionCard = ({
-  contract,
-  currentUser,
-  nearConfig,
-  wallet,
-  onLoading,
-  showAddNewElection,
-}) => {
+const AddGameCard = ({ onAddGame }) => {
   let [isShowing, setIsShowing] = useState(false);
   let [isHovered, setIsHovered] = useState(false);
 
@@ -30,7 +23,7 @@ const AddElectionCard = ({
       leaveTo="opacity-0 scale-95 "
     >
       <button
-        onClick={showAddNewElection}
+        onClick={onAddGame}
         className={`w-full bg-gradient-to-r ${
           isHovered
             ? "from-green-300 to-blue-500"
@@ -58,4 +51,4 @@ const AddElectionCard = ({
   );
 };
 
-export default AddElectionCard;
+export default AddGameCard;

@@ -1,195 +1,137 @@
 import { PersistentSet, context, PersistentMap, RNG } from "near-sdk-core";
 import { AccountId, Timestamp } from "../utils";
-import {
-  Candidate,
-  CandidateVotes,
-  Election,
-  ElectionInfo,
-  ElectionVotes,
-  Vote,
-} from "./model";
+import { Game } from "./model";
 @nearBindgen
 export class Contract {
-  private elections: PersistentMap<u32, Election>;
-  private electionIds: PersistentSet<u32>;
-  private godModeUsers: PersistentSet<AccountId>;
+  private games: PersistentMap<u16, Game>;
+  private gamesById: PersistentMap<AccountId, PersistentSet<u16>>;
+  private joinedGameIds: PersistentMap<AccountId, PersistentSet<u16>>;
 
   constructor() {
-    this.elections = new PersistentMap<u32, Election>("e");
-    this.electionIds = new PersistentSet<u32>("ei");
-    this.godModeUsers = new PersistentSet<AccountId>("gm");
-  }
-
-  get_elections(): ElectionInfo[] {
-    const electionIds = this.electionIds.values();
-    let elections: ElectionInfo[] = [];
-    for (let i: i32 = 0; i < electionIds.length; i++) {
-      elections.push(this.elections.getSome(electionIds[i]).electionInfo);
-    }
-    return elections;
-  }
-
-  get_candidates(electionId: u32): Candidate[] {
-    assert(
-      this.elections.contains(electionId),
-      `No election with id [${electionId}] found. Did you mistype?`
+    this.games = new PersistentMap<u16, Game>("games");
+    this.gamesById = new PersistentMap<AccountId, PersistentSet<u16>>(
+      "gamesById"
     );
-    return this.elections.getSome(electionId).candidates.values();
+
+    this.joinedGameIds = new PersistentMap<AccountId, PersistentSet<u16>>(
+      "joinedGameIds"
+    );
   }
 
-  get_votes(electionId: u32): ElectionVotes {
-    assert(
-      this.elections.contains(electionId),
-      `No election with id [${electionId}] found. Did you mistype?`
-    );
-    const election = this.elections.getSome(electionId);
-    const allCandidates = election.candidates.values();
-    const candidatesVotes: CandidateVotes[] = [];
-    for (let i: i32 = 0; i < allCandidates.length; i++) {
-      const candidate = allCandidates[i];
-      let votes: Vote[];
-      if (election.votes.contains(candidate.accountId)) {
-        votes = election.votes.getSome(candidate.accountId).values();
-      } else {
-        votes = [];
+  get_games(accountId: AccountId): Game[] {
+    let games: Game[] = [];
+    if (this.gamesById.contains(accountId)) {
+      const gameIds = this.gamesById.getSome(accountId).values();
+      for (let i: i32 = 0; i < gameIds.length; i++) {
+        const gameId = gameIds[i];
+        games.push(this.games.getSome(gameId));
       }
-      const candidateVote = new CandidateVotes(candidate, votes);
-      candidatesVotes.push(candidateVote);
     }
-    return new ElectionVotes(election.electionInfo, candidatesVotes);
+    if (this.joinedGameIds.contains(accountId)) {
+      const gameIds = this.joinedGameIds.getSome(accountId).values();
+      for (let i: i32 = 0; i < gameIds.length; i++) {
+        const gameId = gameIds[i];
+        games.push(this.games.getSome(gameId));
+      }
+    }
+    return games;
   }
 
-  get_god_mode(accountId: AccountId): bool {
-    return this.godModeUsers.has(accountId);
-  }
+  get_game(gameId: u16, accountId: AccountId): Game | null {
+    if (this.games.contains(gameId)) {
+      const game = this.games.getSome(gameId);
+      assert(
+        game.ownerId == accountId || game.counterpartyId == accountId,
+        "You are not participating in this game."
+      );
+      let fields: string[][];
+      if (game.ownerId == accountId) {
+        fields = game.counterpartyFields;
+      } else {
+        fields = game.ownerFields;
+      }
 
-  get_god_mode_all(): string[] {
-    return this.godModeUsers.values();
+      return game;
+    }
+    return null;
   }
 
   @mutateState()
-  god_mode_on(): void {
-    this.godModeUsers.add(context.sender);
+  make_move(gameId: u16, row: i16, col: i16): void {
+    assert(
+      this.games.contains(gameId),
+      "Game does not exist. Maybe you mistype game id?"
+    );
+    const accountId = context.sender;
+    const game = this.games.getSome(gameId);
+    let fields: string[][];
+    if (game.ownerId == accountId) {
+      fields = game.counterpartyFields;
+    } else {
+      fields = game.ownerFields;
+    }
+    const fieldRow = fields[row];
+    const fieldCol = fieldRow[col];
+    if (fieldCol == "*") {
+      fields[row][col] = "x";
+    } else if (fieldCol == ".") {
+      fields[row][col] = "-";
+    }
+    if (game.ownerId == accountId) {
+      game.counterpartyFields = fields;
+    } else {
+      game.ownerFields = fields;
+    }
+    this.games.set(gameId, game);
   }
 
   @mutateState()
-  god_mode_off(): void {
-    this.godModeUsers.delete(context.sender);
-  }
-
-  @mutateState()
-  add_election(
-    title: string,
-    description: string,
-    startDate: Timestamp,
-    endDate: Timestamp
-  ): void {
+  create_game(): void {
+    const accountId = context.sender;
     const rng = new RNG<u16>(1, u16.MAX_VALUE);
-    const electionId = rng.next();
-    const start =
-      startDate > 0
-        ? startDate * 1000000
-        : context.blockTimestamp + 86400000000000;
-    const election = new Election(
-      electionId,
-      context.sender,
-      context.blockTimestamp,
-      startDate > 0
-        ? startDate * 1000000
-        : context.blockTimestamp + 86400000000000,
-      endDate > 0 ? endDate * 1000000 : start + 86400000000000 * 7,
-      title,
-      description
-    );
-    this.electionIds.add(electionId);
-    this.elections.set(electionId, election);
+    const newGameId = rng.next();
+    const game = new Game(newGameId, accountId, "");
+    this.games.set(newGameId, game);
+    if (this.gamesById.contains(accountId)) {
+      const gameIds = this.gamesById.getSome(accountId);
+      gameIds.add(newGameId);
+      this.gamesById.set(accountId, gameIds);
+    } else {
+      const gameIds = new PersistentSet<u16>(`games${accountId}`);
+      gameIds.add(newGameId);
+      this.gamesById.set(accountId, gameIds);
+    }
   }
 
   @mutateState()
-  add_candidacy(
-    electionId: u32,
-    name: string,
-    slogan: string,
-    goals: string
-  ): void {
-    const candidateId = context.sender;
+  join_game(gameId: u16): void {
+    const accountId = context.sender;
     assert(
-      this.elections.contains(electionId),
-      `No election with id [${electionId}] found. Did you mistype?`
+      this.games.contains(gameId),
+      "Game does not exist. Maybe you mistype game id?"
     );
 
-    const election = this.elections.getSome(electionId);
-    if (!this.godModeUsers.has(context.sender)) {
-      assert(
-        election.electionInfo.startDate > context.blockTimestamp,
-        "Could not add candidacy to the ongoing elections."
-      );
+    const game = this.games.getSome(gameId);
+
+    assert(
+      game.counterpartyId == "",
+      "Game is already taken by another user. Try creating a new game and ask friend to join."
+    );
+
+    assert(game.ownerId != accountId, "Cannot join own game.");
+
+    game.counterpartyId = accountId;
+
+    if (this.joinedGameIds.contains(accountId)) {
+      const gameIds = this.joinedGameIds.getSome(accountId);
+      gameIds.add(gameId);
+      this.joinedGameIds.set(accountId, gameIds);
+    } else {
+      const gameIds = new PersistentSet<u16>(`joinedGames${accountId}`);
+      gameIds.add(gameId);
+      this.joinedGameIds.set(accountId, gameIds);
     }
-    assert(
-      !election.candidateIds.has(candidateId),
-      "Candidate is already registered in this election, dont cheat! Your votes will not sum up in case you register yourself twice :)"
-    );
-    assert(
-      name.length > 0,
-      "Name is required, put your account ID as name if you was us to put it on the election billboard!"
-    );
-    assert(
-      slogan.length > 0,
-      "Slogan is required, what are you going to print on the snapbacks abd t-shirts?"
-    );
-    assert(
-      goals.length > 0,
-      "Goals is required, who will vote to you without the clear goals?"
-    );
 
-    const date = context.blockTimestamp;
-    const candidate = new Candidate(candidateId, date, name, slogan, goals);
-    election.candidates.add(candidate);
-    election.candidateIds.add(candidateId);
-    this.elections.set(electionId, election);
-  }
-
-  @mutateState()
-  add_vote(electionId: u32, candidateId: string, comment: string): void {
-    assert(
-      this.elections.contains(electionId),
-      `No election with id [${electionId}] found. Did you mistype?`
-    );
-    const election = this.elections.getSome(electionId);
-    if (!this.godModeUsers.has(context.sender)) {
-      assert(
-        election.electionInfo.startDate < context.blockTimestamp,
-        "Could not add vote to the election which is not yet started."
-      );
-      assert(
-        election.electionInfo.endDate > context.blockTimestamp,
-        "Could not add vote to the election which is already finished."
-      );
-    }
-    const voterId = context.sender;
-    const date = context.blockTimestamp;
-    const donation = context.attachedDeposit;
-    assert(
-      election.candidateIds.has(candidateId),
-      "Candidate is not registered in the election. Maybe you mistyped his account id?"
-    );
-
-    assert(!election.voters.has(voterId), "Sorry, you can only vote once!");
-    election.voters.add(voterId);
-    const vote = new Vote(
-      voterId,
-      date,
-      candidateId,
-      comment ? comment : "",
-      donation
-    );
-
-    let votes = election.votes.get(candidateId);
-    if (votes == null) {
-      votes = new PersistentSet<Vote>(`vt${electionId}${candidateId}`);
-    }
-    votes.add(vote);
-    election.votes.set(candidateId, votes);
-    this.elections.set(electionId, election);
+    this.games.set(gameId, game);
   }
 }

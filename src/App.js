@@ -1,9 +1,9 @@
 import "regenerator-runtime/runtime";
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import Elections from "./Elections";
 import Authorization from "./Authorization";
 import LoadingIndicator from "./LoadingIndicator";
+import Games from "./Games";
 import ErrorPopup from "./ErrorPopup";
 
 const App = ({ contract, currentUser, nearConfig, wallet }) => {
@@ -21,14 +21,14 @@ const App = ({ contract, currentUser, nearConfig, wallet }) => {
       />
       <ErrorPopup error={error} callback={() => setError("")} />
       <LoadingIndicator isLoading={isLoading} />
-      {currentUser && (
-        <Elections
+      {currentUser && currentUser.accountId && (
+        <Games
           contract={contract}
           currentUser={currentUser}
           nearConfig={nearConfig}
           wallet={wallet}
           onLoading={setIsLoading}
-          onError={(err) => setError(err)}
+          onError={setError}
         />
       )}
     </div>
@@ -37,15 +37,11 @@ const App = ({ contract, currentUser, nearConfig, wallet }) => {
 
 App.propTypes = {
   contract: PropTypes.shape({
-    get_elections: PropTypes.func.isRequired,
-    get_candidates: PropTypes.func.isRequired,
-    get_votes: PropTypes.func.isRequired,
-    get_god_mode: PropTypes.func.isRequired,
-    add_election: PropTypes.func.isRequired,
-    add_candidacy: PropTypes.func.isRequired,
-    add_vote: PropTypes.func.isRequired,
-    god_mode_on: PropTypes.func.isRequired,
-    god_mode_off: PropTypes.func.isRequired,
+    get_games: PropTypes.func.isRequired,
+    get_game: PropTypes.func.isRequired,
+    create_game: PropTypes.func.isRequired,
+    join_game: PropTypes.func.isRequired,
+    make_move: PropTypes.func.isRequired,
   }).isRequired,
   currentUser: PropTypes.shape({
     accountId: PropTypes.string.isRequired,
