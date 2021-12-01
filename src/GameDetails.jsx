@@ -27,7 +27,7 @@ const GameDetails = ({
 
   const onFieldSelected = (row, col) => {
     onLoading(true);
-    if (canMakeMove) {
+    if (canMakeMove()) {
       contract
         .make_move({
           gameId: game.id,
@@ -231,7 +231,7 @@ const GameDetails = ({
                     key={`row-${i}`}
                     fields={f}
                     row={i}
-                    canMakeMove={canMakeMove}
+                    canMakeMove={canMakeMove()}
                     onFieldSelected={onFieldSelected}
                   />
                 ))}
@@ -273,12 +273,12 @@ const Field = ({ field, row, col, onFieldSelected, ownBoard, canMakeMove }) => {
       onMouseEnter={() => setFieldHovered(true)}
       onMouseLeave={() => setFieldHovered(false)}
       className={`w-10 h-10 ${
-        canMakeMove() && !ownBoard && (field === "." || field === "*")
+        canMakeMove && !ownBoard && (field === "." || field === "*")
           ? "cursor-pointer border border-transparent rounded-md hover:bg-red-200"
           : ""
       } flex items-center justify-center`}
       onClick={() => {
-        if (canMakeMove() && !ownBoard && (field === "." || field === "*")) {
+        if (canMakeMove && !ownBoard && (field === "." || field === "*")) {
           onFieldSelected(row, col);
         }
       }}
