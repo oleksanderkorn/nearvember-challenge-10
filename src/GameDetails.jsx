@@ -1,6 +1,7 @@
 import { Fragment, useState, useEffect } from "react";
 import { Transition } from "@headlessui/react";
 import { useTimeoutFn } from "react-use";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 const GameDetails = ({
   currentGame,
@@ -14,11 +15,14 @@ const GameDetails = ({
 }) => {
   const [isShowing, setIsShowing] = useState(false);
   const [game, setGame] = useState(currentGame);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [winner, setWinner] = useState("");
   const [closeButtonColor, setCloseButtonColor] = useState("#000");
   const [shouldReloadGame, setShouldReloadGame] = useState(true);
+  let [isCopied, setIsCopied] = useState(false);
 
   const canMakeMove = () => {
-    return game.counterpartyId; // TODO add current turn
+    return game.counterpartyId && !isGameOver;
   };
 
   const onFieldSelected = (row, col) => {
@@ -49,6 +53,41 @@ const GameDetails = ({
   useEffect(() => {
     resetIsShowing();
   }, [resetIsShowing]);
+
+  let [, , resetIsCopied] = useTimeoutFn(() => setIsCopied(false), 500);
+
+  const showCopied = () => {
+    setIsCopied(true);
+    resetIsCopied();
+  };
+
+  useEffect(() => {
+    if (game) {
+      let isOwnerHasShips = false;
+      game.ownerFields.forEach((row) => {
+        row.forEach((field) => {
+          if (field === "*") {
+            isOwnerHasShips = true;
+          }
+        });
+      });
+      let isCounterpartyHasShips = false;
+      game.counterpartyFields.forEach((row) => {
+        row.forEach((field) => {
+          if (field === "*") {
+            isCounterpartyHasShips = true;
+          }
+        });
+      });
+      if (isOwnerHasShips && !isCounterpartyHasShips) {
+        setIsGameOver(true);
+        setWinner(game.ownerId);
+      } else if (!isOwnerHasShips && isCounterpartyHasShips) {
+        setIsGameOver(true);
+        setWinner(game.counterpartyId);
+      }
+    }
+  }, [game]);
 
   useEffect(() => {
     if (currentUser && currentUser.accountId && onLoading && shouldReloadGame) {
@@ -91,8 +130,29 @@ const GameDetails = ({
     >
       <div className="mw-800 bg-gradient-to-r from-indigo-300 to-indigo-500 p-6 rounded-xl flex-col shadow-md flex">
         <div className="text-2xl flex justify-between font-medium items-center mb-4">
-          <div className="mx-auto mt-2 text-2xl text-center font-medium text-black">
-            Game #{game.id}
+          <div className="mx-auto mt-2 text-2xl text-center font-medium text-black flex items-center justify-center">
+            Game #{game.id} {isGameOver && `is over. Winner: ${winner}`}
+            {game && game.counterpartyId === "" && (
+              <CopyToClipboard text={game.id} onCopy={showCopied}>
+                <button className="inline-flex justify-center ml-2 px-2 py-2 text-sm font-medium border border-transparent rounded-md hover:bg-red-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  {isCopied && <span>copied</span>}
+                </button>
+              </CopyToClipboard>
+            )}
           </div>
           <button
             className="font-medium "
