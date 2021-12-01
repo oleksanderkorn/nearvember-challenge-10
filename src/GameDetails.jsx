@@ -171,6 +171,9 @@ const GameDetails = ({
                     key={`row-${i}`}
                     fields={f}
                     row={i}
+                    hasCounterparty={
+                      game.counterpartyId && game.counterpartyId !== ""
+                    }
                     onFieldSelected={onFieldSelected}
                   />
                 ))}
