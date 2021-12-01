@@ -291,7 +291,7 @@ const Field = ({ field, row, col, onFieldSelected, ownBoard, canMakeMove }) => {
           viewBox="0 0 24 24"
           stroke="#333"
         >
-          {fieldHovered ? (
+          {fieldHovered && canMakeMove ? (
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
