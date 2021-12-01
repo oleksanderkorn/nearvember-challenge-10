@@ -22,7 +22,7 @@ const GameDetails = ({
   let [isCopied, setIsCopied] = useState(false);
 
   const canMakeMove = () => {
-    return game.counterpartyId && !isGameOver;
+    return game && game.counterpartyId && !isGameOver;
   };
 
   const onFieldSelected = (row, col) => {
@@ -231,9 +231,7 @@ const GameDetails = ({
                     key={`row-${i}`}
                     fields={f}
                     row={i}
-                    hasCounterparty={
-                      game.counterpartyId && game.counterpartyId !== ""
-                    }
+                    canMakeMove={canMakeMove}
                     onFieldSelected={onFieldSelected}
                   />
                 ))}
@@ -246,7 +244,7 @@ const GameDetails = ({
   );
 };
 
-const Board = ({ fields, row, onFieldSelected, ownBoard, hasCounterparty }) => {
+const Board = ({ fields, row, onFieldSelected, ownBoard, canMakeMove }) => {
   return (
     <div className="flex justify-center">
       {fields &&
@@ -259,7 +257,7 @@ const Board = ({ fields, row, onFieldSelected, ownBoard, hasCounterparty }) => {
               field={f}
               col={i}
               row={row}
-              hasCounterparty={hasCounterparty}
+              canMakeMove={canMakeMove}
               onFieldSelected={onFieldSelected}
             />
           )
@@ -267,14 +265,7 @@ const Board = ({ fields, row, onFieldSelected, ownBoard, hasCounterparty }) => {
     </div>
   );
 };
-const Field = ({
-  field,
-  row,
-  col,
-  onFieldSelected,
-  ownBoard,
-  hasCounterparty,
-}) => {
+const Field = ({ field, row, col, onFieldSelected, ownBoard, canMakeMove }) => {
   const [fieldHovered, setFieldHovered] = useState(false);
 
   return (
@@ -282,12 +273,12 @@ const Field = ({
       onMouseEnter={() => setFieldHovered(true)}
       onMouseLeave={() => setFieldHovered(false)}
       className={`w-10 h-10 ${
-        hasCounterparty && !ownBoard && (field === "." || field === "*")
+        canMakeMove() && !ownBoard && (field === "." || field === "*")
           ? "cursor-pointer border border-transparent rounded-md hover:bg-red-200"
           : ""
       } flex items-center justify-center`}
       onClick={() => {
-        if (hasCounterparty && !ownBoard && (field === "." || field === "*")) {
+        if (canMakeMove() && !ownBoard && (field === "." || field === "*")) {
           onFieldSelected(row, col);
         }
       }}
