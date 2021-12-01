@@ -64,6 +64,10 @@ export class Contract {
     );
     const accountId = context.sender;
     const game = this.games.getSome(gameId);
+    assert(
+      game.counterpartyId != "",
+      "no one joined the game. Share game id with your friend or login with a different account in another browser."
+    );
     let fields: string[][];
     if (game.ownerId == accountId) {
       fields = game.counterpartyFields;

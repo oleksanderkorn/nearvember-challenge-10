@@ -139,6 +139,9 @@ const GameDetails = ({
                     key={`row-${i}`}
                     fields={f}
                     row={i}
+                    hasCounterparty={
+                      game.counterpartyId && game.counterpartyId !== ""
+                    }
                     onFieldSelected={onFieldSelected}
                   />
                 ))}
@@ -180,7 +183,7 @@ const GameDetails = ({
   );
 };
 
-const Board = ({ fields, row, onFieldSelected, ownBoard }) => {
+const Board = ({ fields, row, onFieldSelected, ownBoard, hasCounterparty }) => {
   return (
     <div className="flex justify-center">
       {fields &&
@@ -193,6 +196,7 @@ const Board = ({ fields, row, onFieldSelected, ownBoard }) => {
               field={f}
               col={i}
               row={row}
+              hasCounterparty={hasCounterparty}
               onFieldSelected={onFieldSelected}
             />
           )
@@ -200,21 +204,57 @@ const Board = ({ fields, row, onFieldSelected, ownBoard }) => {
     </div>
   );
 };
-const Field = ({ field, row, col, onFieldSelected, ownBoard }) => {
+const Field = ({
+  field,
+  row,
+  col,
+  onFieldSelected,
+  ownBoard,
+  hasCounterparty,
+}) => {
+  const [fieldHovered, setFieldHovered] = useState(false);
+
   return (
     <div
+      onMouseEnter={() => setFieldHovered(true)}
+      onMouseLeave={() => setFieldHovered(false)}
       className={`w-10 h-10 ${
-        !ownBoard && (field === "." || field === "*")
+        hasCounterparty && !ownBoard && (field === "." || field === "*")
           ? "cursor-pointer border border-transparent rounded-md hover:bg-red-200"
           : ""
       } flex items-center justify-center`}
       onClick={() => {
-        if (!ownBoard && (field === "." || field === "*")) {
+        if (hasCounterparty && !ownBoard && (field === "." || field === "*")) {
           onFieldSelected(row, col);
         }
       }}
     >
-      {(field === "." || (!ownBoard && field === "*")) && (
+      {!ownBoard && (field === "." || field === "*") && (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="#333"
+        >
+          {fieldHovered ? (
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          ) : (
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            />
+          )}
+        </svg>
+      )}
+      {ownBoard && field === "." && (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-4 w-4"
